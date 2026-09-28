@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="description" content="OQRO prototype: 127 insider trades from SEC Form 4 filings, the 19 that stand out, and why.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230066cc'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='white' stroke-width='7'/%3E%3C/svg%3E">
+<title>OQRO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+<style>
+/* Tokens follow apple.com's web system (VoltAgent/awesome-design-md, apple/DESIGN.md). Light by design. */
+:root {
+  --canvas: #ffffff;
+  --parchment: #f5f5f7;
+  --ink: #1d1d1f;
+  --secondary: #6e6e73;
+  --tertiary: #86868b;
+  --hairline: rgb(0 0 0 / 0.08);
+  --noise: #d2d2d7;
+  --blue: #0066cc;
+  --focus: #0071e3;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 64px;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.022em;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--blue);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  text-wrap: balance;
+}
+
+p {
+  margin: 0;
+}
+
+.wrap {
+  max-width: 1020px;
+  margin-inline: auto;
+  padding-inline: 22px;
+}
+
+.narrow {
+  max-width: 720px;
+}
+
+/* Global nav: slim, frosted */
+
+.global-nav {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  background: rgb(251 251 253 / 0.8);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.global-nav-inner {
+  max-width: 1020px;
+  margin-inline: auto;
+  padding-inline: 22px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.wordmark {
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.04em;
+}
+
+.wordmark:hover {
+  text-decoration: none;
+}
+
+.global-nav-links {
+  display: flex;
+  gap: 28px;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+.global-nav-links a {
+  color: var(--ink);
+  opacity: 0.8;
+}
+
+.global-nav-links a:hover {
+  opacity: 1;
+  text-decoration: none;
+}
+
+/* Hero: centered, generous air */
+
+.hero {
+  background: var(--canvas);
+  padding-block: 88px 64px;
+}
+
+.hero-inner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero-title {
+  font-size: 56px;
+  line-height: 1.07;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.hero-lead {
+  margin-top: 20px;
+  max-width: 640px;
+  font-size: 21px;
+  line-height: 1.38;
+  color: var(--secondary);
+  letter-spacing: 0.011em;
+}
+
+.hero-actions {
+  margin-top: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 11px 22px;
+  border-radius: 9999px;
+  font-size: 17px;
+  transition: transform 120ms ease;
+}
+
+.pill:hover {
+  text-decoration: none;
+}
+
+.pill:active {
+  transform: scale(0.95);
+}
+
+.pill-primary {
+  background: var(--blue);
+  color: #fff;
+}
+
+.pill-primary:hover {
+  background: var(--focus);
+}
+
+.pill-ghost {
+  color: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+
+.back {
+  align-self: flex-start;
+  margin-bottom: 32px;
+  font-size: 17px;
+}
+
+.asset-logo img,
+.asset-logo span {
+  box-shadow: rgb(0 0 0 / 0.22) 3px 5px 30px 0;
+}
+
+.asset-logo + .hero-title {
+  margin-top: 28px;
+}
+
+.stats {
+  margin: 48px 0 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+  width: 100%;
+  max-width: 820px;
+}
+
+.stats div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stats dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: 600;
+}
+
+.stats dt {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--secondary);
+}
+
+/* Noise strip, light */
+
+.strip-wrap {
+  margin-top: 64px;
+}
+
+.strip {
+  margin: 0;
+}
+
+.strip svg {
+  display: block;
+  width: 100%;
+  height: 112px;
+  overflow: visible;
+}
+
+.strip-axis {
+  stroke: var(--noise);
+  stroke-width: 1;
+}
+
+.mark {
+  stroke-width: 3;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.mark.noise {
+  stroke: var(--noise);
+}
+
+.mark.signal {
+  stroke: var(--blue);
+}
+
+.strip-link:hover .mark,
+.strip-link:focus-visible .mark {
+  stroke: var(--focus);
+  stroke-width: 5;
+}
+
+.strip-link:focus-visible {
+  outline: none;
+}
+
+.strip-flash {
+  stroke: var(--ink);
+  pointer-events: none;
+  opacity: 0;
+  animation: flash-out 1100ms ease-out 700ms both;
+}
+
+@keyframes flash-out {
+  from {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .strip-flash {
+    animation: none;
+  }
+
+  .pill {
+    transition: none;
+  }
+}
+
+.strip-months {
+  position: relative;
+  height: 20px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--tertiary);
+}
+
+.strip-months span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.strip-months .strip-end {
+  transform: none;
+}
+
+.strip-end-start {
+  left: 0;
+}
+
+.strip-end-last {
+  right: 0;
+}
+
+.strip-legend {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 24px;
+  font-size: 14px;
+  color: var(--secondary);
+}
+
+.key::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 13px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border-radius: 2px;
+}
+
+.key-signal::before {
+  background: var(--blue);
+}
+
+.key-noise::before {
+  background: var(--noise);
+}
+
+/* Parchment band */
+
+.band {
+  background: var(--parchment);
+  padding-block: 80px;
+}
+
+.band-title {
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.003em;
+}
+
+.band-title-spaced {
+  margin-top: 88px;
+}
+
+.companies {
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.company-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px 6px 6px;
+  background: var(--canvas);
+  border-radius: 9999px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  transition: transform 120ms ease;
+}
+
+.company-chip:hover {
+  text-decoration: none;
+}
+
+.company-chip:active {
+  transform: scale(0.97);
+}
+
+.company-chip .logo {
+  border-radius: 9999px !important;
+}
+
+.company-chip-count {
+  color: var(--secondary);
+  font-weight: 400;
+}
+
+/* Cards */
+
+.cards {
+  margin-top: 28px;
+  display: grid;
+  gap: 20px;
+}
+
+.card {
+  background: var(--canvas);
+  border-radius: 18px;
+  padding: 32px 36px 24px;
+}
+
+.card:target {
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+.card-head {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.card-head:has(.card-logo) {
+  grid-template-columns: auto 1fr auto auto;
+}
+
+.card-logo {
+  display: block;
+  border-radius: 12px;
+}
+
+.logo {
+  display: block;
+  object-fit: cover;
+}
+
+.logo-fallback {
+  display: grid;
+  place-items: center;
+  background: var(--parchment);
+  color: var(--secondary);
+  font-weight: 600;
+}
+
+.card-title {
+  min-width: 0;
+}
+
+.card-company {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 21px;
+  line-height: 1.19;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+a.card-company:hover {
+  text-decoration: none;
+  color: var(--blue);
+}
+
+.card-meta {
+  margin-top: 3px;
+  font-size: 14px;
+  color: var(--secondary);
+  display: flex;
+  gap: 10px;
+}
+
+.card-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.card-direction {
+  font-size: 12px;
+  color: var(--secondary);
+}
+
+.card-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 1.14;
+  font-weight: 600;
+}
+
+.card-person {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.avatar {
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+  /* Portraits usually frame the face in the upper third. */
+  object-position: 50% 22%;
+  flex-shrink: 0;
+}
+
+.avatar-initials {
+  display: grid;
+  place-items: center;
+  background: var(--parchment);
+  color: var(--secondary);
+  font-weight: 600;
+}
+
+.card-name {
+  font-weight: 600;
+}
+
+.card-role {
+  color: var(--secondary);
+}
+
+.card-summary {
+  margin-top: 16px;
+  max-width: 64ch;
+  font-size: 19px;
+  line-height: 1.42;
+  letter-spacing: 0.012em;
+}
+
+.card-why {
+  margin-top: 20px;
+}
+
+.card-why h4,
+.card-context h4 {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.016em;
+}
+
+.card-why ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.card-why li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 15px;
+  color: var(--secondary);
+}
+
+.card-why li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+
+.card-context {
+  margin-top: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.card-context p {
+  margin-top: 4px;
+  max-width: 64ch;
+}
+
+.card-foot {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  font-size: 14px;
+}
+
+.card-facts {
+  color: var(--secondary);
+}
+
+.card-quiet .card-value,
+.card-quiet .card-name {
+  color: var(--secondary);
+}
+
+.card-quiet .card-summary {
+  font-size: 17px;
+  color: var(--secondary);
+}
+
+/* Score ring */
+
+.ring {
+  width: 44px;
+  height: 44px;
+}
+
+.ring-track {
+  fill: none;
+  stroke: var(--parchment);
+  stroke-width: 4;
+}
+
+.ring-value {
+  fill: none;
+  stroke: var(--noise);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.ring-standout .ring-value {
+  stroke: var(--blue);
+}
+
+.ring text {
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+
+/* Method */
+
+.method {
+  padding-block: 88px;
+  text-align: center;
+}
+
+.method p {
+  margin: 20px auto 0;
+  max-width: 62ch;
+  color: var(--secondary);
+}
+
+/* Credits */
+
+.credits {
+  background: var(--canvas);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.credit {
+  padding: 18px 32px;
+  border-top: 1px solid var(--hairline);
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) 1fr;
+  gap: 16px;
+  font-size: 15px;
+}
+
+.credit:first-child {
+  border-top: 0;
+}
+
+.credit-name {
+  font-weight: 600;
+}
+
+/* Footer */
+
+.site-footer {
+  background: var(--parchment);
+  border-top: 1px solid var(--hairline);
+  padding-block: 32px 48px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--secondary);
+}
+
+.site-footer .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px 32px;
+}
+
+.site-footer p {
+  max-width: 72ch;
+}
+
+@media (max-width: 1068px) {
+  .hero-title {
+    font-size: 48px;
+  }
+}
+
+@media (max-width: 734px) {
+  .global-nav-links {
+    display: none;
+  }
+
+  /* 127 trades on a phone-width axis: thinner marks keep them apart. */
+  .mark {
+    stroke-width: 1.25;
+  }
+
+  .mark.signal {
+    stroke-width: 2;
+  }
+
+  .hero {
+    padding-block: 56px 40px;
+  }
+
+  .hero-title {
+    font-size: 34px;
+    line-height: 1.12;
+  }
+
+  .hero-lead {
+    font-size: 19px;
+  }
+
+  .band {
+    padding-block: 56px;
+  }
+
+  .band-title {
+    font-size: 28px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 28px;
+  }
+
+  .stats dd {
+    font-size: 32px;
+  }
+
+  .card {
+    padding: 22px 20px 18px;
+  }
+
+  .card-head {
+    grid-template-columns: 1fr auto;
+  }
+
+  .card-head:has(.card-logo) {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .card-amount {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .card-summary {
+    font-size: 17px;
+  }
+
+  .credit {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 16px 20px;
+  }
+}
+
+.credits-note {
+  margin-top: 16px;
+  max-width: 64ch;
+  color: var(--secondary);
+}
+
+.credits-note + .credits {
+  margin-top: 28px;
+}
+
+</style>
+<nav class="global-nav" id="top"><div class="global-nav-inner"><a class="wordmark" href="#top">OQRO</a><div class="global-nav-links"><a href="#standouts">Trades that stand out</a><a href="#companies">Companies</a><a href="#method">How scoring works</a></div></div></nav>
+<main><section class="hero"><div class="wrap hero-inner"><h1 class="hero-title">127<!-- --> insider trades since <!-- -->May 29<!-- -->.<br/>19<!-- --> stand out.</h1><p class="hero-lead">Of the other <!-- -->108<!-- -->, <!-- -->91<!-- --> were scheduled in advance under a trading plan, <!-- -->3<!-- --> were sold automatically to cover tax, and <!-- -->14<!-- --> were smaller.</p><div class="hero-actions"><a class="pill pill-primary" href="#standouts">See the <!-- -->19<!-- --> trades</a><a class="pill pill-ghost" href="#method">How scoring works</a></div></div><div class="wrap strip-wrap"><figure class="strip"><svg aria-label="Every trade in the period, placed by date" preserveaspectratio="none" role="group" viewbox="0 0 1000 112"><line class="strip-axis" x1="0" x2="1000" y1="111" y2="111"></line><line class="mark noise" x1="8" x2="8" y1="44" y2="108"><title>PLTR, May 29: Lauren Elaina Friedman Stat, Director, sold $505,730 in shares. Score 12.</title></line><line class="mark noise" x1="12" x2="12" y1="44" y2="108"><title>INTC, May 29: Nagasubramaniyan Chandrasekaran, EVP, CT &amp; Ops Off, GM Foundry, sold $2.5M in shares. Score 59.</title></line><line class="mark noise" x1="33.016949152542374" x2="33.016949152542374" y1="44" y2="108"><title>AMZN, Jun 1: Douglas J Herrington, CEO Worldwide Amazon Stores, sold $266,190 in shares. Score 19.</title></line><line class="mark noise" x1="66.37288135593221" x2="66.37288135593221" y1="44" y2="108"><title>TSLA, Jun 5: Vaibhav Taneja, Chief Financial Officer, sold $1.0M in shares. Score 0.</title></line><line class="mark noise" x1="116.40677966101694" x2="116.40677966101694" y1="44" y2="108"><title>PLTR, Jun 11: Jeffrey Buckley, Chief Accounting Officer, sold $190,753 in shares. Score 13.</title></line><a class="strip-link" href="#e-53b2a52b-99e2-45f1-937f-c4003b2348b4"><title>AVGO, Jun 11: Harry L. You, Director, bought $373,570 in shares. Score 71.</title><line class="mark signal" x1="120.40677966101694" x2="120.40677966101694" y1="4" y2="108"></line></a><line class="mark noise" x1="149.76271186440678" x2="149.76271186440678" y1="44" y2="108"><title>AAPL, Jun 15: Ben Borders, Principal Accounting Officer, sold $34,236 in shares. Score 10.</title></line><line class="mark noise" x1="153.76271186440678" x2="153.76271186440678" y1="44" y2="108"><title>PLTR, Jun 15: Alexander D. Moore, Director, sold $2.1M in shares. Score 18.</title></line><a class="strip-link" href="#e-1f28ae9f-9461-4d92-b2cf-5ac7fe5e0f1a"><title>AVGO, Jun 16: Mark David Brazeal, Chief Legal &amp; Corp Affairs Ofc, sold $3.2M in shares. Score 60.</title><line class="mark signal" x1="158.10169491525426" x2="158.10169491525426" y1="4" y2="108"></line></a><line class="mark noise" x1="166.44067796610167" x2="166.44067796610167" y1="44" y2="108"><title>AVGO, Jun 17: Henry Samueli, Director, sold $250.0M in shares. Score 39.</title></line><line class="mark noise" x1="208.135593220339" x2="208.135593220339" y1="44" y2="108"><title>JPM, Jun 22: Stacey Friedman, General Counsel, sold $1.8M in shares. Score 23.</title></line><line class="mark noise" x1="224.81355932203388" x2="224.81355932203388" y1="44" y2="108"><title>ORCL, Jun 24: Jeffrey Henley, Vice Chairman, sold $63.7M in shares. Score 53.</title></line><a class="strip-link" href="#e-c92b2414-dc51-496b-a8d5-6fce3853e2d1"><title>AVGO, Jun 25: Mark David Brazeal, Chief Legal &amp; Corp Affairs Ofc, sold $9.7M in shares. Score 65.</title><line class="mark signal" x1="233.15254237288136" x2="233.15254237288136" y1="4" y2="108"></line></a><a class="strip-link" href="#e-50ea5e24-cf68-440b-9d92-5d87c161e560"><title>ADBE, Jun 25: David A Ricks, Director, bought $1.9M in shares. Score 83.</title><line class="mark signal" x1="237.15254237288136" x2="237.15254237288136" y1="4" y2="108"></line></a><line class="mark noise" x1="266.5084745762712" x2="266.5084745762712" y1="44" y2="108"><title>AVGO, Jun 29: Justine Page, Director, sold $598,916 in shares. Score 48.</title></line><line class="mark noise" x1="283.18644067796606" x2="283.18644067796606" y1="44" y2="108"><title>AMZN, Jul 1: Douglas J Herrington, CEO Worldwide Amazon Stores, sold $239,770 in shares. Score 19.</title></line><line class="mark noise" x1="287.18644067796606" x2="287.18644067796606" y1="44" y2="108"><title>COIN, Jul 1: Frederick R Wilson, Director, sold $1.6M in shares. Score 22.</title></line><line class="mark noise" x1="291.52542372881356" x2="291.52542372881356" y1="44" y2="108"><title>PLTR, Jul 2: Shyam Sankar, Chief Technology Officer and Executive Vice President, sold $24.1M in shares. Score 39.</title></line><line class="mark noise" x1="341.5593220338983" x2="341.5593220338983" y1="44" y2="108"><title>AVGO, Jul 8: Gayla J Delly, Director, sold $728,368 in shares. Score 49.</title></line><a class="strip-link" href="#e-03685504-f70b-45f5-8ed0-9d1f8b49ddb3"><title>AVGO, Jul 8: Mark David Brazeal, Chief Legal &amp; Corp Affairs Ofc, sold $9.5M in shares. Score 65.</title><line class="mark signal" x1="345.5593220338983" x2="345.5593220338983" y1="4" y2="108"></line></a><a class="strip-link" href="#e-d9b3d02f-04e0-4d69-b2f1-1cdc8d7cc7c2"><title>AVGO, Jul 10: Mark David Brazeal, Chief Legal &amp; Corp Affairs Ofc, sold $10.0M in shares. Score 65.</title><line class="mark signal" x1="358.2372881355932" x2="358.2372881355932" y1="4" y2="108"></line></a><line class="mark noise" x1="399.9322033898305" x2="399.9322033898305" y1="44" y2="108"><title>PLTR, Jul 15: Alexander D. Moore, Director, sold $2.1M in shares. Score 18.</title></line><line class="mark noise" x1="403.9322033898305" x2="403.9322033898305" y1="44" y2="108"><title>GS, Jul 15: Ericka T Leslie, Chief Administrative Officer, sold $287,951 in shares. Score 50.</title></line><line class="mark noise" x1="516.6779661016949" x2="516.6779661016949" y1="44" y2="108"><title>ADBE, Jul 29: Jillian Forusz, SVP &amp; CAO, sold $109,961 in shares. Score 45.</title></line><line class="mark noise" x1="558.3728813559321" x2="558.3728813559321" y1="44" y2="108"><title>AMZN, Aug 3: Douglas J Herrington, CEO Worldwide Amazon Stores, sold $278,390 in shares. Score 19.</title></line><line class="mark noise" x1="562.3728813559321" x2="562.3728813559321" y1="44" y2="108"><title>COIN, Aug 3: Frederick R Wilson, Director, sold $5.1M in shares. Score 32.</title></line><line class="mark noise" x1="566.3728813559321" x2="566.3728813559321" y1="44" y2="108"><title>AMZN, Aug 3: Jeffrey P Bezos, Executive Chair, sold $346.5M in shares. Score 50.</title></line><line class="mark noise" x1="570.3728813559321" x2="570.3728813559321" y1="44" y2="108"><title>NFLX, Aug 3: David A Hyman, Chief Legal Officer, sold $416,899 in shares. Score 51.</title></line><line class="mark noise" x1="566.7118644067797" x2="566.7118644067797" y1="44" y2="108"><title>GS, Aug 4: Ericka T Leslie, Chief Administrative Officer, sold $184,445 in shares. Score 48.</title></line><line class="mark noise" x1="575.0508474576271" x2="575.0508474576271" y1="44" y2="108"><title>PLTR, Aug 5: Lauren Elaina Friedman Stat, Director, sold $500,280 in shares. Score 12.</title></line><line class="mark noise" x1="579.0508474576271" x2="579.0508474576271" y1="44" y2="108"><title>NFLX, Aug 5: Richard N Barton, Director, sold $162,216 in shares. Score 17.</title></line><line class="mark noise" x1="583.3898305084746" x2="583.3898305084746" y1="44" y2="108"><title>PLTR, Aug 6: Shyam Sankar, Chief Technology Officer and Executive Vice President, sold $5.4M in shares. Score 27.</title></line><a class="strip-link" href="#e-659b9da5-317b-4ea5-906c-25e96b00f518"><title>NFLX, Aug 6: Gregory K Peters, Co-CEO, sold $2.0M in shares. Score 63.</title><line class="mark signal" x1="587.3898305084746" x2="587.3898305084746" y1="4" y2="108"></line></a><line class="mark noise" x1="616.7457627118645" x2="616.7457627118645" y1="44" y2="108"><title>NFLX, Aug 10: Spencer Adam Neumann, Chief Financial Officer, sold $700,907 in shares. Score 58.</title></line><line class="mark noise" x1="625.0847457627118" x2="625.0847457627118" y1="44" y2="108"><title>AMD, Aug 11: Ava Hahn, SVP, GC &amp; Corporate Secretary, sold $67,889 in shares. Score 10.</title></line><line class="mark noise" x1="629.0847457627118" x2="629.0847457627118" y1="44" y2="108"><title>JPM, Aug 11: Robin Leopold, Head of Human Resources, sold $903,518 in shares. Score 15.</title></line><line class="mark noise" x1="633.0847457627118" x2="633.0847457627118" y1="44" y2="108"><title>AAPL, Aug 11: Jennifer Newstead, SVP, GC and Secretary, sold $442,852 in shares. Score 16.</title></line><a class="strip-link" href="#e-333412de-4c18-4af5-af39-0f7863c77834"><title>INTC, Aug 11: Lip Bu Tan, CEO, bought $10.0M in shares. Score 95.</title><line class="mark signal" x1="637.0847457627118" x2="637.0847457627118" y1="4" y2="108"></line></a><line class="mark noise" x1="650.1016949152543" x2="650.1016949152543" y1="44" y2="108"><title>AMD, Aug 14: Mark D Papermaster, Chief Technology Officer &amp; EVP, sold $3.6M in shares. Score 26.</title></line><line class="mark noise" x1="658.4406779661017" x2="658.4406779661017" y1="44" y2="108"><title>META, Aug 15: Susan J Li, Chief Financial Officer, sold $1.5M in shares. Score 0.</title></line><line class="mark noise" x1="662.4406779661017" x2="662.4406779661017" y1="44" y2="108"><title>AMZN, Aug 15: Douglas J Herrington, CEO Worldwide Amazon Stores, sold $982,993 in shares. Score 25.</title></line><a class="strip-link" href="#e-e2dd0c11-5389-496e-8df8-71637205bba5"><title>AMD, Aug 15: Paul Darren Grasby, EVP &amp; CSO, sold $7.7M in shares. Score 64.</title><line class="mark signal" x1="666.4406779661017" x2="666.4406779661017" y1="4" y2="108"></line></a><line class="mark noise" x1="675.1186440677966" x2="675.1186440677966" y1="44" y2="108"><title>PLTR, Aug 17: Alexander D. Moore, Director, sold $2.8M in shares. Score 19.</title></line><line class="mark noise" x1="683.457627118644" x2="683.457627118644" y1="44" y2="108"><title>AAPL, Aug 18: Jennifer Newstead, SVP, GC and Secretary, sold $442,478 in shares. Score 16.</title></line><line class="mark noise" x1="687.457627118644" x2="687.457627118644" y1="44" y2="108"><title>AMD, Aug 18: Ava Hahn, SVP, GC &amp; Corporate Secretary, sold $1.5M in shares. Score 22.</title></line><line class="mark noise" x1="691.457627118644" x2="691.457627118644" y1="44" y2="108"><title>META, Aug 18: Curtis J. Mahoney, Chief Legal Officer, sold $869,922 in shares. Score 24.</title></line><line class="mark noise" x1="695.457627118644" x2="695.457627118644" y1="44" y2="108"><title>AMD, Aug 18: Lisa T Su, Chair, President &amp; CEO, sold $7.2M in shares. Score 34.</title></line><line class="mark noise" x1="699.457627118644" x2="699.457627118644" y1="44" y2="108"><title>META, Aug 18: Andrew Bosworth, Chief Technology Officer, sold $4.4M in shares. Score 36.</title></line><line class="mark noise" x1="703.457627118644" x2="703.457627118644" y1="44" y2="108"><title>META, Aug 18: Susan J Li, Chief Financial Officer, sold $5.1M in shares. Score 37.</title></line><line class="mark noise" x1="691.7966101694916" x2="691.7966101694916" y1="44" y2="108"><title>AMD, Aug 19: Mark D Papermaster, Chief Technology Officer &amp; EVP, sold $13.6M in shares. Score 31.</title></line><line class="mark noise" x1="700.135593220339" x2="700.135593220339" y1="44" y2="108"><title>PLTR, Aug 20: Jeffrey Buckley, Chief Accounting Officer, sold $577,133 in shares. Score 18.</title></line><line class="mark noise" x1="704.135593220339" x2="704.135593220339" y1="44" y2="108"><title>PLTR, Aug 20: Alexander C. Karp, Chief Executive Officer, sold $86.1M in shares. Score 44.</title></line><line class="mark noise" x1="708.4745762711864" x2="708.4745762711864" y1="44" y2="108"><title>AMZN, Aug 21: Shelley Reynolds, Vice President, sold $606,854 in shares. Score 18.</title></line><line class="mark noise" x1="712.4745762711864" x2="712.4745762711864" y1="44" y2="108"><title>AMZN, Aug 21: Douglas J Herrington, CEO Worldwide Amazon Stores, sold $1.6M in shares. Score 27.</title></line><line class="mark noise" x1="716.4745762711864" x2="716.4745762711864" y1="44" y2="108"><title>AMZN, Aug 21: Brian T Olsavsky, Senior Vice President and CFO, sold $1.6M in shares. Score 27.</title></line><line class="mark noise" x1="720.4745762711864" x2="720.4745762711864" y1="44" y2="108"><title>AMZN, Aug 21: David Zapolsky, Senior Vice President, sold $4.0M in shares. Score 31.</title></line><line class="mark noise" x1="724.4745762711864" x2="724.4745762711864" y1="44" y2="108"><title>AMZN, Aug 21: Andrew R Jassy, President and CEO, sold $5.2M in shares. Score 32.</title></line><line class="mark noise" x1="728.4745762711864" x2="728.4745762711864" y1="44" y2="108"><title>AMZN, Aug 21: Matthew S Garman, CEO Amazon Web Services, sold $3.8M in shares. Score 36.</title></line><line class="mark noise" x1="733.4915254237288" x2="733.4915254237288" y1="44" y2="108"><title>COIN, Aug 24: Jennifer N. Jones, Chief Accounting Officer, sold $389,203 in shares. Score 26.</title></line><line class="mark noise" x1="737.4915254237288" x2="737.4915254237288" y1="44" y2="108"><title>AMD, Aug 24: Forrest Eugene Norrod, EVP &amp; GM DSG, sold $7.9M in shares. Score 29.</title></line><line class="mark noise" x1="741.8305084745763" x2="741.8305084745763" y1="44" y2="108"><title>AAPL, Aug 25: Jennifer Newstead, SVP, GC and Secretary, sold $447,457 in shares. Score 17.</title></line><line class="mark noise" x1="745.8305084745763" x2="745.8305084745763" y1="44" y2="108"><title>AMD, Aug 25: Jean X. Hu, EVP, CFO and Treasurer, sold $7.1M in shares. Score 34.</title></line><line class="mark noise" x1="766.8474576271187" x2="766.8474576271187" y1="44" y2="108"><title>GOOGL, Aug 28: Frances Arnold, Director, sold $27,692 in shares. Score 5.</title></line><line class="mark noise" x1="770.8474576271187" x2="770.8474576271187" y1="44" y2="108"><title>GS, Aug 28: Ericka T Leslie, Chief Administrative Officer, sold $620,280 in shares. Score 53.</title></line><line class="mark noise" x1="791.864406779661" x2="791.864406779661" y1="44" y2="108"><title>NVDA, Aug 31: Timothy S. Teter, EVP, General Counsel and Sec, sold $6.5M in shares. Score 28.</title></line><a class="strip-link" href="#e-a759356d-454a-4d31-a94f-a7728b69c358"><title>NVDA, Aug 31: Mark A Stevens, Director, sold $410.8M in shares. Score 80.</title><line class="mark signal" x1="795.864406779661" x2="795.864406779661" y1="4" y2="108"></line></a><line class="mark noise" x1="800.2033898305084" x2="800.2033898305084" y1="44" y2="108"><title>PLTR, Sep 1: Lauren Elaina Friedman Stat, Director, sold $244,915 in shares. Score 9.</title></line><line class="mark noise" x1="804.2033898305084" x2="804.2033898305084" y1="44" y2="108"><title>AAPL, Sep 1: Jennifer Newstead, SVP, GC and Government Affairs, sold $456,177 in shares. Score 17.</title></line><line class="mark noise" x1="808.2033898305084" x2="808.2033898305084" y1="44" y2="108"><title>AMZN, Sep 1: Douglas J Herrington, CEO Worldwide Amazon Stores, sold $254,770 in shares. Score 19.</title></line><line class="mark noise" x1="812.2033898305084" x2="812.2033898305084" y1="44" y2="108"><title>COIN, Sep 1: Frederick R Wilson, Director, sold $1.8M in shares. Score 28.</title></line><line class="mark noise" x1="816.8813559322034" x2="816.8813559322034" y1="44" y2="108"><title>META, Sep 3: Aaron Anderson, Chief Accounting Officer, sold $2.0M in shares. Score 28.</title></line><a class="strip-link" href="#e-578d8d9b-1277-400f-be2f-82554d83b36f"><title>NVDA, Sep 3: Mark A Stevens, Director, sold $235.6M in shares. Score 79.</title><line class="mark signal" x1="820.8813559322034" x2="820.8813559322034" y1="4" y2="108"></line></a><line class="mark noise" x1="825.2203389830509" x2="825.2203389830509" y1="44" y2="108"><title>CRWD, Sep 4: George Kurtz, President and CEO, sold $4.2M in shares. Score 31.</title></line><line class="mark noise" x1="829.2203389830509" x2="829.2203389830509" y1="44" y2="108"><title>CRM, Sep 4: Craig Conway, Director, sold $1.2M in shares. Score 56.</title></line><line class="mark noise" x1="833.5593220338983" x2="833.5593220338983" y1="44" y2="108"><title>TSLA, Sep 5: Vaibhav Taneja, Chief Financial Officer, sold $938,419 in shares. Score 0.</title></line><line class="mark noise" x1="858.5762711864407" x2="858.5762711864407" y1="44" y2="108"><title>NFLX, Sep 8: Richard N Barton, Director, sold $55,872 in shares. Score 10.</title></line><line class="mark noise" x1="862.5762711864407" x2="862.5762711864407" y1="44" y2="108"><title>AAPL, Sep 8: Jennifer Newstead, SVP, GC and Government Affairs, sold $456,177 in shares. Score 17.</title></line><line class="mark noise" x1="866.5762711864407" x2="866.5762711864407" y1="44" y2="108"><title>COIN, Sep 8: Marc L Andreessen, Director, sold $2.5M in shares. Score 19.</title></line><line class="mark noise" x1="870.5762711864407" x2="870.5762711864407" y1="44" y2="108"><title>SNOW, Sep 8: Christian Kleinerman, EVP, Product Management, sold $916,516 in shares. Score 20.</title></line><line class="mark noise" x1="874.5762711864407" x2="874.5762711864407" y1="44" y2="108"><title>META, Sep 8: Javier Olivan, Chief Operating Officer, sold $3.3M in shares. Score 25.</title></line><line class="mark noise" x1="866.9152542372882" x2="866.9152542372882" y1="44" y2="108"><title>NFLX, Sep 9: Richard N Barton, Director, sold $109,102 in shares. Score 10.</title></line><line class="mark noise" x1="870.9152542372882" x2="870.9152542372882" y1="44" y2="108"><title>CRWD, Sep 9: George Kurtz, President and CEO, sold $4.2M in shares. Score 31.</title></line><line class="mark noise" x1="874.9152542372882" x2="874.9152542372882" y1="44" y2="108"><title>META, Sep 9: Christopher K Cox, Chief Product Officer, sold $13.0M in shares. Score 31.</title></line><line class="mark noise" x1="875.2542372881355" x2="875.2542372881355" y1="44" y2="108"><title>JPM, Sep 10: Robin Leopold, Head of Human Resources, sold $882,027 in shares. Score 14.</title></line><line class="mark noise" x1="879.2542372881355" x2="879.2542372881355" y1="44" y2="108"><title>AMD, Sep 10: Lisa T Su, Chair, President &amp; CEO, sold $48.1M in shares. Score 52.</title></line><line class="mark noise" x1="883.593220338983" x2="883.593220338983" y1="44" y2="108"><title>CRWD, Sep 11: George Kurtz, President and CEO, sold $4.4M in shares. Score 31.</title></line><line class="mark noise" x1="908.6101694915254" x2="908.6101694915254" y1="44" y2="108"><title>META, Sep 14: Javier Olivan, Chief Operating Officer, sold $1.0M in shares. Score 20.</title></line><line class="mark noise" x1="912.6101694915254" x2="912.6101694915254" y1="44" y2="108"><title>MSFT, Sep 14: Amy Hood, EVP, Chief Financial Officer, sold $20.8M in shares. Score 38.</title></line><a class="strip-link" href="#e-c13e7c78-6516-49ba-bcec-71f97c7073e1"><title>CRWD, Sep 14: Roxanne S Austin, Director, sold $11.9M in shares. Score 66.</title><line class="mark signal" x1="916.6101694915254" x2="916.6101694915254" y1="4" y2="108"></line></a><line class="mark noise" x1="916.9491525423729" x2="916.9491525423729" y1="44" y2="108"><title>AAPL, Sep 15: Jennifer Newstead, SVP, GC and Government Affairs, sold $474,813 in shares. Score 17.</title></line><line class="mark noise" x1="920.9491525423729" x2="920.9491525423729" y1="44" y2="108"><title>PLTR, Sep 15: Alexander D. Moore, Director, sold $2.8M in shares. Score 19.</title></line><line class="mark noise" x1="924.9491525423729" x2="924.9491525423729" y1="44" y2="108"><title>SNOW, Sep 15: Christian Kleinerman, EVP, Product Management, sold $951,071 in shares. Score 20.</title></line><line class="mark noise" x1="928.9491525423729" x2="928.9491525423729" y1="44" y2="108"><title>SNOW, Sep 15: Vivek Raghunathan, SVP, Engineering, sold $1.2M in shares. Score 21.</title></line><line class="mark noise" x1="932.9491525423729" x2="932.9491525423729" y1="44" y2="108"><title>SNOW, Sep 15: Frank Slootman, Director, sold $2.6M in shares. Score 24.</title></line><line class="mark noise" x1="936.9491525423729" x2="936.9491525423729" y1="44" y2="108"><title>ORCL, Sep 15: Michael D. Sicilia, Chief Executive Officer, sold $1.5M in shares. Score 27.</title></line><line class="mark noise" x1="940.9491525423729" x2="940.9491525423729" y1="44" y2="108"><title>AMD, Sep 15: Forrest Eugene Norrod, EVP &amp; GM DSG, sold $8.7M in shares. Score 29.</title></line><line class="mark noise" x1="944.9491525423729" x2="944.9491525423729" y1="44" y2="108"><title>META, Sep 15: Christopher K Cox, Chief Product Officer, sold $13.5M in shares. Score 31.</title></line><line class="mark noise" x1="948.9491525423729" x2="948.9491525423729" y1="44" y2="108"><title>CRWD, Sep 15: George Kurtz, President and CEO, sold $4.8M in shares. Score 32.</title></line><line class="mark noise" x1="952.9491525423729" x2="952.9491525423729" y1="44" y2="108"><title>SNOW, Sep 15: Emily Ho, Chief Accounting Officer, sold $255,693 in shares. Score 49.</title></line><a class="strip-link" href="#e-145b23be-3ce9-42c2-a8a3-0ed00013e33a"><title>SNOW, Sep 15: Jonathan Mead Beaulier, Chief Revenue Officer, sold $4.1M in shares. Score 61.</title><line class="mark signal" x1="956.9491525423729" x2="956.9491525423729" y1="4" y2="108"></line></a><line class="mark noise" x1="925.2881355932203" x2="925.2881355932203" y1="44" y2="108"><title>NVDA, Sep 16: Colette Kress, EVP &amp; Chief Financial Officer, sold $7.6M in shares. Score 34.</title></line><line class="mark noise" x1="929.2881355932203" x2="929.2881355932203" y1="44" y2="108"><title>CRWD, Sep 16: Gerhard Watzinger, Director, sold $28.6M in shares. Score 40.</title></line><a class="strip-link" href="#e-1a98fb89-8a26-4871-83fb-d62605333691"><title>ADBE, Sep 16: Shantanu Narayen, Chair and CEO, sold $31.3M in shares. Score 80.</title><line class="mark signal" x1="933.2881355932203" x2="933.2881355932203" y1="4" y2="108"></line></a><line class="mark noise" x1="933.6271186440679" x2="933.6271186440679" y1="44" y2="108"><title>CRWD, Sep 17: George Kurtz, President and CEO, sold $4.8M in shares. Score 32.</title></line><a class="strip-link" href="#e-52cf216f-3d07-4f09-8d8e-366f118af83c"><title>CRWD, Sep 17: Cary Davis, Director, sold $7.4M in shares. Score 64.</title><line class="mark signal" x1="937.6271186440679" x2="937.6271186440679" y1="4" y2="108"></line></a><line class="mark noise" x1="941.9661016949153" x2="941.9661016949153" y1="44" y2="108"><title>SNOW, Sep 18: Frank Slootman, Director, sold $100.3M in shares. Score 45.</title></line><a class="strip-link" href="#e-4d127b2a-69a3-4242-9d35-26df187452d0"><title>CRM, Sep 18: David Blair Kirk, Director, bought $999,451 in shares. Score 75.</title><line class="mark signal" x1="945.9661016949153" x2="945.9661016949153" y1="4" y2="108"></line></a><a class="strip-link" href="#e-229b3a29-0fa5-471d-8a3e-96d330908809"><title>NVDA, Sep 18: Mark A Stevens, Director, sold $300.1M in shares. Score 85.</title><line class="mark signal" x1="949.9661016949153" x2="949.9661016949153" y1="4" y2="108"></line></a><line class="mark noise" x1="950.3050847457628" x2="950.3050847457628" y1="44" y2="108"><title>ORCL, Sep 19: Michael D. Sicilia, Chief Executive Officer, sold $3.4M in shares. Score 30.</title></line><line class="mark noise" x1="954.3050847457628" x2="954.3050847457628" y1="44" y2="108"><title>ORCL, Sep 19: Maria Smith, EVP, Chief  Accounting Officer, sold $399,123 in shares. Score 51.</title></line><line class="mark noise" x1="966.9830508474575" x2="966.9830508474575" y1="44" y2="108"><title>COIN, Sep 21: Marc L Andreessen, Director, sold $1.4M in shares. Score 16.</title></line><line class="mark noise" x1="970.9830508474575" x2="970.9830508474575" y1="44" y2="108"><title>META, Sep 21: Javier Olivan, Chief Operating Officer, sold $1.1M in shares. Score 20.</title></line><line class="mark noise" x1="974.9830508474575" x2="974.9830508474575" y1="44" y2="108"><title>SNOW, Sep 21: Christian Kleinerman, EVP, Product Management, sold $903,279 in shares. Score 20.</title></line><line class="mark noise" x1="978.9830508474575" x2="978.9830508474575" y1="44" y2="108"><title>CRWD, Sep 21: George Kurtz, President and CEO, sold $753,078 in shares. Score 24.</title></line><line class="mark noise" x1="982.9830508474575" x2="982.9830508474575" y1="44" y2="108"><title>NVDA, Sep 21: Timothy S. Teter, EVP, General Counsel and Sec, sold $6.8M in shares. Score 28.</title></line><line class="mark noise" x1="986.9830508474575" x2="986.9830508474575" y1="44" y2="108"><title>COIN, Sep 21: Alesia J Haas, Chief Financial Officer, sold $8.0M in shares. Score 34.</title></line><line class="mark noise" x1="990.9830508474575" x2="990.9830508474575" y1="44" y2="108"><title>META, Sep 21: Christopher K Cox, Chief Product Officer, sold $28.5M in shares. Score 35.</title></line><line class="mark noise" x1="994.9830508474575" x2="994.9830508474575" y1="44" y2="108"><title>CRWD, Sep 21: George Kurtz, President and CEO, sold $19.5M in shares. Score 38.</title></line><line class="mark noise" x1="998.9830508474575" x2="998.9830508474575" y1="44" y2="108"><title>CRWD, Sep 21: Anurag Saha, Chief Accounting Officer, sold $1.6M in shares. Score 57.</title></line><a class="strip-link" href="#e-6c81c098-2e5e-4dac-b1b8-8c90732e7b61"><title>CRWD, Sep 21: Michael Sentonas, President, sold $11.6M in shares. Score 66.</title><line class="mark signal" x1="1002.9830508474575" x2="1002.9830508474575" y1="4" y2="108"></line></a><a class="strip-link" href="#e-b9db8ce4-7932-4a45-aaf0-b5cf857dacb6"><title>CRWD, Sep 21: Burt W. Podbere, Chief Financial Officer, sold $8.1M in shares. Score 69.</title><line class="mark signal" x1="1006.9830508474575" x2="1006.9830508474575" y1="4" y2="108"></line></a><line class="mark noise" x1="975.3220338983051" x2="975.3220338983051" y1="44" y2="108"><title>AAPL, Sep 22: Jennifer Newstead, SVP, GC and Government Affairs, sold $815,804 in shares. Score 19.</title></line><line class="mark noise" x1="979.3220338983051" x2="979.3220338983051" y1="44" y2="108"><title>CRWD, Sep 22: George Kurtz, President and CEO, sold $5.1M in shares. Score 32.</title></line><line class="mark noise" x1="983.6610169491526" x2="983.6610169491526" y1="44" y2="108"><title>SNOW, Sep 23: Benoit Dageville, Director, sold $17.0M in shares. Score 27.</title></line><line class="mark noise" x1="987.6610169491526" x2="987.6610169491526" y1="44" y2="108"><title>AVGO, Sep 23: Henry Samueli, Director, sold $250.0M in shares. Score 39.</title></line><line class="mark noise" x1="991.6610169491526" x2="991.6610169491526" y1="44" y2="108"><title>SNOW, Sep 23: Jonathan Mead Beaulier, Chief Revenue Officer, sold $253,953 in shares. Score 49.</title></line><line class="mark noise" x1="992" x2="992" y1="44" y2="108"><title>CRWD, Sep 24: Burt W. Podbere, Chief Financial Officer, sold $125.5M in shares. Score 56.</title></line><g aria-hidden="true" class="strip-flash"><line class="mark" x1="8" x2="8" y1="44" y2="108"></line><line class="mark" x1="12" x2="12" y1="44" y2="108"></line><line class="mark" x1="33.016949152542374" x2="33.016949152542374" y1="44" y2="108"></line><line class="mark" x1="66.37288135593221" x2="66.37288135593221" y1="44" y2="108"></line><line class="mark" x1="116.40677966101694" x2="116.40677966101694" y1="44" y2="108"></line><line class="mark" x1="120.40677966101694" x2="120.40677966101694" y1="4" y2="108"></line><line class="mark" x1="149.76271186440678" x2="149.76271186440678" y1="44" y2="108"></line><line class="mark" x1="153.76271186440678" x2="153.76271186440678" y1="44" y2="108"></line><line class="mark" x1="158.10169491525426" x2="158.10169491525426" y1="4" y2="108"></line><line class="mark" x1="166.44067796610167" x2="166.44067796610167" y1="44" y2="108"></line><line class="mark" x1="208.135593220339" x2="208.135593220339" y1="44" y2="108"></line><line class="mark" x1="224.81355932203388" x2="224.81355932203388" y1="44" y2="108"></line><line class="mark" x1="233.15254237288136" x2="233.15254237288136" y1="4" y2="108"></line><line class="mark" x1="237.15254237288136" x2="237.15254237288136" y1="4" y2="108"></line><line class="mark" x1="266.5084745762712" x2="266.5084745762712" y1="44" y2="108"></line><line class="mark" x1="283.18644067796606" x2="283.18644067796606" y1="44" y2="108"></line><line class="mark" x1="287.18644067796606" x2="287.18644067796606" y1="44" y2="108"></line><line class="mark" x1="291.52542372881356" x2="291.52542372881356" y1="44" y2="108"></line><line class="mark" x1="341.5593220338983" x2="341.5593220338983" y1="44" y2="108"></line><line class="mark" x1="345.5593220338983" x2="345.5593220338983" y1="4" y2="108"></line><line class="mark" x1="358.2372881355932" x2="358.2372881355932" y1="4" y2="108"></line><line class="mark" x1="399.9322033898305" x2="399.9322033898305" y1="44" y2="108"></line><line class="mark" x1="403.9322033898305" x2="403.9322033898305" y1="44" y2="108"></line><line class="mark" x1="516.6779661016949" x2="516.6779661016949" y1="44" y2="108"></line><line class="mark" x1="558.3728813559321" x2="558.3728813559321" y1="44" y2="108"></line><line class="mark" x1="562.3728813559321" x2="562.3728813559321" y1="44" y2="108"></line><line class="mark" x1="566.3728813559321" x2="566.3728813559321" y1="44" y2="108"></line><line class="mark" x1="570.3728813559321" x2="570.3728813559321" y1="44" y2="108"></line><line class="mark" x1="566.7118644067797" x2="566.7118644067797" y1="44" y2="108"></line><line class="mark" x1="575.0508474576271" x2="575.0508474576271" y1="44" y2="108"></line><line class="mark" x1="579.0508474576271" x2="579.0508474576271" y1="44" y2="108"></line><line class="mark" x1="583.3898305084746" x2="583.3898305084746" y1="44" y2="108"></line><line class="mark" x1="587.3898305084746" x2="587.3898305084746" y1="4" y2="108"></line><line class="mark" x1="616.7457627118645" x2="616.7457627118645" y1="44" y2="108"></line><line class="mark" x1="625.0847457627118" x2="625.0847457627118" y1="44" y2="108"></line><line class="mark" x1="629.0847457627118" x2="629.0847457627118" y1="44" y2="108"></line><line class="mark" x1="633.0847457627118" x2="633.0847457627118" y1="44" y2="108"></line><line class="mark" x1="637.0847457627118" x2="637.0847457627118" y1="4" y2="108"></line><line class="mark" x1="650.1016949152543" x2="650.1016949152543" y1="44" y2="108"></line><line class="mark" x1="658.4406779661017" x2="658.4406779661017" y1="44" y2="108"></line><line class="mark" x1="662.4406779661017" x2="662.4406779661017" y1="44" y2="108"></line><line class="mark" x1="666.4406779661017" x2="666.4406779661017" y1="4" y2="108"></line><line class="mark" x1="675.1186440677966" x2="675.1186440677966" y1="44" y2="108"></line><line class="mark" x1="683.457627118644" x2="683.457627118644" y1="44" y2="108"></line><line class="mark" x1="687.457627118644" x2="687.457627118644" y1="44" y2="108"></line><line class="mark" x1="691.457627118644" x2="691.457627118644" y1="44" y2="108"></line><line class="mark" x1="695.457627118644" x2="695.457627118644" y1="44" y2="108"></line><line class="mark" x1="699.457627118644" x2="699.457627118644" y1="44" y2="108"></line><line class="mark" x1="703.457627118644" x2="703.457627118644" y1="44" y2="108"></line><line class="mark" x1="691.7966101694916" x2="691.7966101694916" y1="44" y2="108"></line><line class="mark" x1="700.135593220339" x2="700.135593220339" y1="44" y2="108"></line><line class="mark" x1="704.135593220339" x2="704.135593220339" y1="44" y2="108"></line><line class="mark" x1="708.4745762711864" x2="708.4745762711864" y1="44" y2="108"></line><line class="mark" x1="712.4745762711864" x2="712.4745762711864" y1="44" y2="108"></line><line class="mark" x1="716.4745762711864" x2="716.4745762711864" y1="44" y2="108"></line><line class="mark" x1="720.4745762711864" x2="720.4745762711864" y1="44" y2="108"></line><line class="mark" x1="724.4745762711864" x2="724.4745762711864" y1="44" y2="108"></line><line class="mark" x1="728.4745762711864" x2="728.4745762711864" y1="44" y2="108"></line><line class="mark" x1="733.4915254237288" x2="733.4915254237288" y1="44" y2="108"></line><line class="mark" x1="737.4915254237288" x2="737.4915254237288" y1="44" y2="108"></line><line class="mark" x1="741.8305084745763" x2="741.8305084745763" y1="44" y2="108"></line><line class="mark" x1="745.8305084745763" x2="745.8305084745763" y1="44" y2="108"></line><line class="mark" x1="766.8474576271187" x2="766.8474576271187" y1="44" y2="108"></line><line class="mark" x1="770.8474576271187" x2="770.8474576271187" y1="44" y2="108"></line><line class="mark" x1="791.864406779661" x2="791.864406779661" y1="44" y2="108"></line><line class="mark" x1="795.864406779661" x2="795.864406779661" y1="4" y2="108"></line><line class="mark" x1="800.2033898305084" x2="800.2033898305084" y1="44" y2="108"></line><line class="mark" x1="804.2033898305084" x2="804.2033898305084" y1="44" y2="108"></line><line class="mark" x1="808.2033898305084" x2="808.2033898305084" y1="44" y2="108"></line><line class="mark" x1="812.2033898305084" x2="812.2033898305084" y1="44" y2="108"></line><line class="mark" x1="816.8813559322034" x2="816.8813559322034" y1="44" y2="108"></line><line class="mark" x1="820.8813559322034" x2="820.8813559322034" y1="4" y2="108"></line><line class="mark" x1="825.2203389830509" x2="825.2203389830509" y1="44" y2="108"></line><line class="mark" x1="829.2203389830509" x2="829.2203389830509" y1="44" y2="108"></line><line class="mark" x1="833.5593220338983" x2="833.5593220338983" y1="44" y2="108"></line><line class="mark" x1="858.5762711864407" x2="858.5762711864407" y1="44" y2="108"></line><line class="mark" x1="862.5762711864407" x2="862.5762711864407" y1="44" y2="108"></line><line class="mark" x1="866.5762711864407" x2="866.5762711864407" y1="44" y2="108"></line><line class="mark" x1="870.5762711864407" x2="870.5762711864407" y1="44" y2="108"></line><line class="mark" x1="874.5762711864407" x2="874.5762711864407" y1="44" y2="108"></line><line class="mark" x1="866.9152542372882" x2="866.9152542372882" y1="44" y2="108"></line><line class="mark" x1="870.9152542372882" x2="870.9152542372882" y1="44" y2="108"></line><line class="mark" x1="874.9152542372882" x2="874.9152542372882" y1="44" y2="108"></line><line class="mark" x1="875.2542372881355" x2="875.2542372881355" y1="44" y2="108"></line><line class="mark" x1="879.2542372881355" x2="879.2542372881355" y1="44" y2="108"></line><line class="mark" x1="883.593220338983" x2="883.593220338983" y1="44" y2="108"></line><line class="mark" x1="908.6101694915254" x2="908.6101694915254" y1="44" y2="108"></line><line class="mark" x1="912.6101694915254" x2="912.6101694915254" y1="44" y2="108"></line><line class="mark" x1="916.6101694915254" x2="916.6101694915254" y1="4" y2="108"></line><line class="mark" x1="916.9491525423729" x2="916.9491525423729" y1="44" y2="108"></line><line class="mark" x1="920.9491525423729" x2="920.9491525423729" y1="44" y2="108"></line><line class="mark" x1="924.9491525423729" x2="924.9491525423729" y1="44" y2="108"></line><line class="mark" x1="928.9491525423729" x2="928.9491525423729" y1="44" y2="108"></line><line class="mark" x1="932.9491525423729" x2="932.9491525423729" y1="44" y2="108"></line><line class="mark" x1="936.9491525423729" x2="936.9491525423729" y1="44" y2="108"></line><line class="mark" x1="940.9491525423729" x2="940.9491525423729" y1="44" y2="108"></line><line class="mark" x1="944.9491525423729" x2="944.9491525423729" y1="44" y2="108"></line><line class="mark" x1="948.9491525423729" x2="948.9491525423729" y1="44" y2="108"></line><line class="mark" x1="952.9491525423729" x2="952.9491525423729" y1="44" y2="108"></line><line class="mark" x1="956.9491525423729" x2="956.9491525423729" y1="4" y2="108"></line><line class="mark" x1="925.2881355932203" x2="925.2881355932203" y1="44" y2="108"></line><line class="mark" x1="929.2881355932203" x2="929.2881355932203" y1="44" y2="108"></line><line class="mark" x1="933.2881355932203" x2="933.2881355932203" y1="4" y2="108"></line><line class="mark" x1="933.6271186440679" x2="933.6271186440679" y1="44" y2="108"></line><line class="mark" x1="937.6271186440679" x2="937.6271186440679" y1="4" y2="108"></line><line class="mark" x1="941.9661016949153" x2="941.9661016949153" y1="44" y2="108"></line><line class="mark" x1="945.9661016949153" x2="945.9661016949153" y1="4" y2="108"></line><line class="mark" x1="949.9661016949153" x2="949.9661016949153" y1="4" y2="108"></line><line class="mark" x1="950.3050847457628" x2="950.3050847457628" y1="44" y2="108"></line><line class="mark" x1="954.3050847457628" x2="954.3050847457628" y1="44" y2="108"></line><line class="mark" x1="966.9830508474575" x2="966.9830508474575" y1="44" y2="108"></line><line class="mark" x1="970.9830508474575" x2="970.9830508474575" y1="44" y2="108"></line><line class="mark" x1="974.9830508474575" x2="974.9830508474575" y1="44" y2="108"></line><line class="mark" x1="978.9830508474575" x2="978.9830508474575" y1="44" y2="108"></line><line class="mark" x1="982.9830508474575" x2="982.9830508474575" y1="44" y2="108"></line><line class="mark" x1="986.9830508474575" x2="986.9830508474575" y1="44" y2="108"></line><line class="mark" x1="990.9830508474575" x2="990.9830508474575" y1="44" y2="108"></line><line class="mark" x1="994.9830508474575" x2="994.9830508474575" y1="44" y2="108"></line><line class="mark" x1="998.9830508474575" x2="998.9830508474575" y1="44" y2="108"></line><line class="mark" x1="1002.9830508474575" x2="1002.9830508474575" y1="4" y2="108"></line><line class="mark" x1="1006.9830508474575" x2="1006.9830508474575" y1="4" y2="108"></line><line class="mark" x1="975.3220338983051" x2="975.3220338983051" y1="44" y2="108"></line><line class="mark" x1="979.3220338983051" x2="979.3220338983051" y1="44" y2="108"></line><line class="mark" x1="983.6610169491526" x2="983.6610169491526" y1="44" y2="108"></line><line class="mark" x1="987.6610169491526" x2="987.6610169491526" y1="44" y2="108"></line><line class="mark" x1="991.6610169491526" x2="991.6610169491526" y1="44" y2="108"></line><line class="mark" x1="992" x2="992" y1="44" y2="108"></line></g></svg><div aria-hidden="true" class="strip-months"><span style="left:3.301694915254237%">Jun</span><span style="left:28.318644067796605%">Jul</span><span style="left:54.169491525423716%">Aug</span><span style="left:80.02033898305085%">Sep</span></div></figure><p class="strip-legend"><span class="key key-signal">Stands out</span><span class="key key-noise">Scheduled, tax or smaller</span><span>Each line is one trade. Select a blue line to jump to it.</span></p></div></section><section class="band"><div class="wrap"><h2 class="band-title" id="companies">Companies with trades that stand out.</h2><ul class="companies"><li><a class="company-chip" href="#e-333412de-4c18-4af5-af39-0f7863c77834"><img alt="" class="logo" decoding="async" height="32" loading="lazy" src="logos/INTC.png" style="color:transparent;width:32px;height:32px;border-radius:8px" width="32"/><span class="company-chip-name">Intel</span><span class="company-chip-count">1 trade</span></a></li><li><a class="company-chip" href="#e-229b3a29-0fa5-471d-8a3e-96d330908809"><img alt="" class="logo" decoding="async" height="32" loading="lazy" src="logos/NVDA.png" style="color:transparent;width:32px;height:32px;border-radius:8px" width="32"/><span class="company-chip-name">NVIDIA</span><span class="company-chip-count">3 trades</span></a></li><li><a class="company-chip" href="#e-50ea5e24-cf68-440b-9d92-5d87c161e560"><img alt="" class="logo" decoding="async" height="32" loading="lazy" src="logos/ADBE.png" style="color:transparent;width:32px;height:32px;border-radius:8px" width="32"/><span class="company-chip-name">Adobe</span><span class="company-chip-count">2 trades</span></a></li><li><a class="company-chip" href="#e-4d127b2a-69a3-4242-9d35-26df187452d0"><img alt="" class="logo" decoding="async" height="32" loading="lazy" src="logos/CRM.png" style="color:transparent;width:32px;height:32px;border-radius:8px" width="32"/><span class="company-chip-name">Salesforce</span><span class="company-chip-count">1 trade</span></a></li><li><a class="company-chip" href="#e-53b2a52b-99e2-45f1-937f-c4003b2348b4"><img alt="" class="logo" decoding="async" height="32" loading="lazy" src="logos/AVGO.png" style="color:transparent;width:32px;height:32px;border-radius:8px" width="32"/><span class="company-chip-name">Broadcom</span><span class="company-chip-count">5 trades</span></a></li><li><a class="company-chip" href="#e-b9db8ce4-7932-4a45-aaf0-b5cf857dacb6"><img alt="" class="logo" decoding="async" height="32" loading="lazy" src="logos/CRWD.png" style="color:transparent;width:32px;height:32px;border-radius:8px" width="32"/><span class="company-chip-name">CrowdStrike</span><span class="company-chip-count">4 trades</span></a></li><li><a class="company-chip" href="#e-e2dd0c11-5389-496e-8df8-71637205bba5"><img alt="" class="logo" decoding="async" height="32" loading="lazy" src="logos/AMD.png" style="color:transparent;width:32px;height:32px;border-radius:8px" width="32"/><span class="company-chip-name">AMD</span><span class="company-chip-count">1 trade</span></a></li><li><a class="company-chip" href="#e-659b9da5-317b-4ea5-906c-25e96b00f518"><img alt="" class="logo" decoding="async" height="32" loading="lazy" src="logos/NFLX.png" style="color:transparent;width:32px;height:32px;border-radius:8px" width="32"/><span class="company-chip-name">Netflix</span><span class="company-chip-count">1 trade</span></a></li><li><a class="company-chip" href="#e-145b23be-3ce9-42c2-a8a3-0ed00013e33a"><img alt="" class="logo" decoding="async" height="32" loading="lazy" src="logos/SNOW.png" style="color:transparent;width:32px;height:32px;border-radius:8px" width="32"/><span class="company-chip-name">Snowflake</span><span class="company-chip-count">1 trade</span></a></li></ul><h2 class="band-title band-title-spaced" id="standouts">Trades that stand out.</h2><div class="cards"><article class="card" id="e-333412de-4c18-4af5-af39-0f7863c77834"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/INTC.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">Intel</span><p class="card-meta">INTC<!-- --> <time datetime="2026-08-11">August 11</time></p></div><div class="card-amount"><span class="card-direction">Bought</span><span class="card-value" title="$9,999,985.00 in total">$10.0M</span></div><svg aria-label="Score 95 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="113.41149479459152 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">95</text></svg></header><div class="card-person"><img alt="" class="avatar" decoding="async" height="40" loading="lazy" src="insiders/lip-bu-tan.jpg" style="color:transparent" title="Photo: United States Department of Commerce, Public domain" width="40"/><span class="card-name">Lip Bu Tan</span><span class="card-role">CEO</span></div><p class="card-summary">Lip Bu Tan, Intel's CEO, bought $10.0M of Intel stock on August 11. Purchases are rare: only 4 of the 127 insider trades since May 29 were purchases, and this is the largest of them. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>One of only 4 purchases among 127 insider trades</li><li>The largest purchase since May 29</li><li>Made by a top executive (CEO)</li><li>Not scheduled in advance: the insider chose the timing</li></ul></section><footer class="card-foot"><p class="card-facts">105,263<!-- --> shares<!-- --> at $95.00 on average<!-- -->, 1,314,669 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/50863/0000050863-26-000177-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-229b3a29-0fa5-471d-8a3e-96d330908809"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/NVDA.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">NVIDIA</span><p class="card-meta">NVDA<!-- --> <time datetime="2026-09-18">September 18</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$300,147,095.40 in total">$300.1M</span></div><svg aria-label="Score 85 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="101.47344271095031 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">85</text></svg></header><div class="card-person"><img alt="" class="avatar" decoding="async" height="40" loading="lazy" src="insiders/mark-a-stevens.jpg" style="color:transparent" title="Photo: Cody Pickens, CC BY-SA 4.0" width="40"/><span class="card-name">Mark A Stevens</span><span class="card-role">Director</span></div><p class="card-summary">Mark A Stevens, who sits on NVIDIA's board, sold $300.1M of NVIDIA stock on September 18. It was the third of three sales by this insider in 18 days, $946.6M in total. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Three sales by the same insider in 18 days, $946.6M in total</li><li>The third-largest sale since May 29</li><li>Made by a board member</li><li>Not scheduled in advance: the insider chose the timing</li><li>Sold 58% of the shares in this holding</li></ul></section><footer class="card-foot"><p class="card-facts">1,366,000<!-- --> shares<!-- --> at $219.73 on average<!-- -->, 970,531 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1045810/0001199039-26-000016-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-50ea5e24-cf68-440b-9d92-5d87c161e560"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/ADBE.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">Adobe</span><p class="card-meta">ADBE<!-- --> <time datetime="2026-06-25">June 25</time></p></div><div class="card-amount"><span class="card-direction">Bought</span><span class="card-value" title="$1,945,130.00 in total">$1.9M</span></div><svg aria-label="Score 83 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="99.08583229422206 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">83</text></svg></header><div class="card-person"><img alt="" class="avatar" decoding="async" height="40" loading="lazy" src="insiders/david-a-ricks.jpg" style="color:transparent" title="Photo: Virginia Office of the Governor, CC BY 4.0" width="40"/><span class="card-name">David A Ricks</span><span class="card-role">Director</span></div><p class="card-summary">David A Ricks, who sits on Adobe's board, bought $1.9M of Adobe stock on June 25. Purchases are rare: only 4 of the 127 insider trades since May 29 were purchases, and this is the second-largest. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>One of only 4 purchases among 127 insider trades</li><li>The second-largest purchase since May 29</li><li>Made by a board member</li><li>Not scheduled in advance: the insider chose the timing</li><li>Grew this holding by 131%</li></ul></section><footer class="card-foot"><p class="card-facts">10,000<!-- --> shares<!-- --> at $194.51 on average<!-- -->, 17,655 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/796343/0000796343-26-000118-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-1a98fb89-8a26-4871-83fb-d62605333691"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/ADBE.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">Adobe</span><p class="card-meta">ADBE<!-- --> <time datetime="2026-09-16">September 16</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$31,344,876.21 in total">$31.3M</span></div><svg aria-label="Score 80 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="95.50441666912971 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">80</text></svg></header><div class="card-person"><img alt="" class="avatar" decoding="async" height="40" loading="lazy" src="insiders/shantanu-narayen.jpg" style="color:transparent" title="Photo: Jolie O'Dell, CC BY 2.0" width="40"/><span class="card-name">Shantanu Narayen</span><span class="card-role">Chair and CEO</span></div><p class="card-summary">Shantanu Narayen, Adobe's Chair and CEO, sold $31.3M of Adobe stock on September 16. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Larger than 90% of sales in the period</li><li>Made by a top executive (Chair and CEO)</li><li>Not scheduled in advance: the insider chose the timing</li><li>Sold 34% of the shares in this holding</li></ul></section><footer class="card-foot"><p class="card-facts">125,000<!-- --> shares<!-- --> at $250.76 on average<!-- -->, 238,724 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/796343/0001224154-26-000003-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-a759356d-454a-4d31-a94f-a7728b69c358"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/NVDA.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">NVIDIA</span><p class="card-meta">NVDA<!-- --> <time datetime="2026-08-31">August 31</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$410,843,670.67 in total">$410.8M</span></div><svg aria-label="Score 80 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="95.50441666912971 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">80</text></svg></header><div class="card-person"><img alt="" class="avatar" decoding="async" height="40" loading="lazy" src="insiders/mark-a-stevens.jpg" style="color:transparent" title="Photo: Cody Pickens, CC BY-SA 4.0" width="40"/><span class="card-name">Mark A Stevens</span><span class="card-role">Director</span></div><p class="card-summary">Mark A Stevens, who sits on NVIDIA's board, sold $410.8M of NVIDIA stock on August 31. It was the first of three sales by this insider in 18 days, $946.6M in total. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Three sales by the same insider in 18 days, $946.6M in total</li><li>The largest sale since May 29</li><li>Made by a board member</li><li>Not scheduled in advance: the insider chose the timing</li><li>Sold 35% of the shares in this holding</li></ul></section><footer class="card-foot"><p class="card-facts">1,848,501<!-- --> shares<!-- --> at $222.26 on average<!-- -->, 3,358,770 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1045810/0001199039-26-000012-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-578d8d9b-1277-400f-be2f-82554d83b36f"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/NVDA.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">NVIDIA</span><p class="card-meta">NVDA<!-- --> <time datetime="2026-09-03">September 3</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$235,636,867.41 in total">$235.6M</span></div><svg aria-label="Score 79 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="94.31061146076559 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">79</text></svg></header><div class="card-person"><img alt="" class="avatar" decoding="async" height="40" loading="lazy" src="insiders/mark-a-stevens.jpg" style="color:transparent" title="Photo: Cody Pickens, CC BY-SA 4.0" width="40"/><span class="card-name">Mark A Stevens</span><span class="card-role">Director</span></div><p class="card-summary">Mark A Stevens, who sits on NVIDIA's board, sold $235.6M of NVIDIA stock on September 3. It was the second of three sales by this insider in 18 days, $946.6M in total. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Three sales by the same insider in 18 days, $946.6M in total</li><li>Larger than 95% of sales in the period</li><li>Made by a board member</li><li>Not scheduled in advance: the insider chose the timing</li><li>Sold 30% of the shares in this holding</li></ul></section><footer class="card-foot"><p class="card-facts">1,022,239<!-- --> shares<!-- --> at $230.51 on average<!-- -->, 2,336,531 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1045810/0001199039-26-000014-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-4d127b2a-69a3-4242-9d35-26df187452d0"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/CRM.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">Salesforce</span><p class="card-meta">CRM<!-- --> <time datetime="2026-09-18">September 18</time></p></div><div class="card-amount"><span class="card-direction">Bought</span><span class="card-value" title="$999,450.85 in total">$999,451</span></div><svg aria-label="Score 75 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="89.5353906273091 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">75</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">DK</span><span class="card-name">David Blair Kirk</span><span class="card-role">Director</span></div><p class="card-summary">David Blair Kirk, who sits on Salesforce's board, bought $999,451 of Salesforce stock on September 18. Purchases are rare: only 4 of the 127 insider trades since May 29 were purchases, and this is the third-largest. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>One of only 4 purchases among 127 insider trades</li><li>The third-largest purchase since May 29</li><li>Made by a board member</li><li>Not scheduled in advance: the insider chose the timing</li><li>Grew this holding by 29%</li></ul></section><footer class="card-foot"><p class="card-facts">4,176<!-- --> shares<!-- --> at $239.33 on average<!-- -->, 18,748 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1108524/0001108524-26-000212-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-53b2a52b-99e2-45f1-937f-c4003b2348b4"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/AVGO.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">Broadcom</span><p class="card-meta">AVGO<!-- --> <time datetime="2026-06-11">June 11</time></p></div><div class="card-amount"><span class="card-direction">Bought</span><span class="card-value" title="$373,570.00 in total">$373,570</span></div><svg aria-label="Score 71 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="84.76016979385261 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">71</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">HY</span><span class="card-name">Harry L. You</span><span class="card-role">Director</span></div><p class="card-summary">Harry L. You, who sits on Broadcom's board, bought $373,570 of Broadcom stock on June 11. Purchases are rare: only 4 of the 127 insider trades since May 29 were purchases. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>One of only 4 purchases among 127 insider trades</li><li>Made by a board member</li><li>Not scheduled in advance: the insider chose the timing</li></ul></section><footer class="card-foot"><p class="card-facts">1,000<!-- --> shares<!-- --> at $373.57 on average<!-- -->, 38,466 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1730168/0001730168-26-000056-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-b9db8ce4-7932-4a45-aaf0-b5cf857dacb6"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/CRWD.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">CrowdStrike</span><p class="card-meta">CRWD<!-- --> <time datetime="2026-09-21">September 21</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$8,069,977.66 in total">$8.1M</span></div><svg aria-label="Score 69 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="82.37255937712436 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">69</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">BP</span><span class="card-name">Burt W. Podbere</span><span class="card-role">Chief Financial Officer</span></div><p class="card-summary">Burt W. Podbere, CrowdStrike's Chief Financial Officer, sold $8.1M of CrowdStrike stock on September 21. It was the first of two sales by this insider in 3 days, $133.6M in total, including $125.5M under pre-scheduled plans. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Two sales by the same insider in 3 days, $133.6M in total, including $125.5M under pre-scheduled plans</li><li>Larger than 77% of sales in the period</li><li>Made by a top executive (Chief Financial Officer)</li><li>Not scheduled in advance: the insider chose the timing</li></ul></section><footer class="card-foot"><p class="card-facts">33,882<!-- --> shares<!-- --> at $238.18 on average<!-- -->, 662,936 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1535527/0001778610-26-000022-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-6c81c098-2e5e-4dac-b1b8-8c90732e7b61"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/CRWD.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">CrowdStrike</span><p class="card-meta">CRWD<!-- --> <time datetime="2026-09-21">September 21</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$11,555,358.49 in total">$11.6M</span></div><svg aria-label="Score 66 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="78.79114375203201 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">66</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">MS</span><span class="card-name">Michael Sentonas</span><span class="card-role">President</span></div><p class="card-summary">Michael Sentonas, CrowdStrike's President, sold $11.6M of CrowdStrike stock on September 21. Seven CrowdStrike insiders sold shares within a week of this trade. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Seven CrowdStrike insiders sold within a week of this trade</li><li>Larger than 81% of sales in the period</li><li>Made by a top executive (President)</li><li>Not scheduled in advance: the insider chose the timing</li></ul></section><footer class="card-foot"><p class="card-facts">49,863<!-- --> shares<!-- --> at $231.74 on average<!-- -->, 1,474,541 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1535527/0001968270-26-000015-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-c13e7c78-6516-49ba-bcec-71f97c7073e1"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/CRWD.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">CrowdStrike</span><p class="card-meta">CRWD<!-- --> <time datetime="2026-09-14">September 14</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$11,880,000.00 in total">$11.9M</span></div><svg aria-label="Score 66 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="78.79114375203201 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">66</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">RA</span><span class="card-name">Roxanne S Austin</span><span class="card-role">Director</span></div><p class="card-summary">Roxanne S Austin, who sits on CrowdStrike's board, sold $11.9M of CrowdStrike stock on September 14. Seven CrowdStrike insiders sold shares within a week of this trade. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Seven CrowdStrike insiders sold within a week of this trade</li><li>Larger than 82% of sales in the period</li><li>Made by a board member</li><li>Not scheduled in advance: the insider chose the timing</li><li>Sold 39% of the shares in this holding</li></ul></section><footer class="card-foot"><p class="card-facts">50,000<!-- --> shares<!-- --> at $237.60 on average<!-- -->, 77,040 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1535527/0001061632-26-000008-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-d9b3d02f-04e0-4d69-b2f1-1cdc8d7cc7c2"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/AVGO.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">Broadcom</span><p class="card-meta">AVGO<!-- --> <time datetime="2026-07-10">July 10</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$10,033,225.00 in total">$10.0M</span></div><svg aria-label="Score 65 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="77.59733854366789 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">65</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">MB</span><span class="card-name">Mark David Brazeal</span><span class="card-role">Chief Legal &amp; Corp Affairs Ofc</span></div><p class="card-summary">Mark David Brazeal, Broadcom's Chief Legal &amp; Corp Affairs Ofc, sold $10.0M of Broadcom stock on July 10. It was the fourth of four sales by this insider in 24 days, $32.4M in total. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Four sales by the same insider in 24 days, $32.4M in total</li><li>Larger than 80% of sales in the period</li><li>Not scheduled in advance: the insider chose the timing</li></ul></section><footer class="card-foot"><p class="card-facts">25,000<!-- --> shares<!-- --> at $401.33 on average<!-- -->, 194,989 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1730168/0001730168-26-000070-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-03685504-f70b-45f5-8ed0-9d1f8b49ddb3"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/AVGO.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">Broadcom</span><p class="card-meta">AVGO<!-- --> <time datetime="2026-07-08">July 8</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$9,479,700.00 in total">$9.5M</span></div><svg aria-label="Score 65 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="77.59733854366789 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">65</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">MB</span><span class="card-name">Mark David Brazeal</span><span class="card-role">Chief Legal &amp; Corp Affairs Ofc</span></div><p class="card-summary">Mark David Brazeal, Broadcom's Chief Legal &amp; Corp Affairs Ofc, sold $9.5M of Broadcom stock on July 8. It was the third of four sales by this insider in 24 days, $32.4M in total. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Four sales by the same insider in 24 days, $32.4M in total</li><li>Larger than 79% of sales in the period</li><li>Not scheduled in advance: the insider chose the timing</li></ul></section><footer class="card-foot"><p class="card-facts">25,000<!-- --> shares<!-- --> at $379.19 on average<!-- -->, 219,989 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1730168/0001730168-26-000066-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-c92b2414-dc51-496b-a8d5-6fce3853e2d1"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/AVGO.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">Broadcom</span><p class="card-meta">AVGO<!-- --> <time datetime="2026-06-25">June 25</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$9,675,000.00 in total">$9.7M</span></div><svg aria-label="Score 65 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="77.59733854366789 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">65</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">MB</span><span class="card-name">Mark David Brazeal</span><span class="card-role">Chief Legal &amp; Corp Affairs Ofc</span></div><p class="card-summary">Mark David Brazeal, Broadcom's Chief Legal &amp; Corp Affairs Ofc, sold $9.7M of Broadcom stock on June 25. It was the second of four sales by this insider in 24 days, $32.4M in total. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Four sales by the same insider in 24 days, $32.4M in total</li><li>Larger than 80% of sales in the period</li><li>Not scheduled in advance: the insider chose the timing</li></ul></section><footer class="card-foot"><p class="card-facts">25,000<!-- --> shares<!-- --> at $387.00 on average<!-- -->, 244,989 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1730168/0001730168-26-000064-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-52cf216f-3d07-4f09-8d8e-366f118af83c"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/CRWD.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">CrowdStrike</span><p class="card-meta">CRWD<!-- --> <time datetime="2026-09-17">September 17</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$7,365,117.80 in total">$7.4M</span></div><svg aria-label="Score 64 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="76.40353333530376 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">64</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">CD</span><span class="card-name">Cary Davis</span><span class="card-role">Director</span></div><p class="card-summary">Cary Davis, who sits on CrowdStrike's board, sold $7.4M of CrowdStrike stock on September 17. Seven CrowdStrike insiders sold shares within a week of this trade. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Seven CrowdStrike insiders sold within a week of this trade</li><li>Made by a board member</li><li>Not scheduled in advance: the insider chose the timing</li><li>Sold 34% of the shares in this holding</li></ul></section><footer class="card-foot"><p class="card-facts">29,940<!-- --> shares<!-- --> at $246.00 on average<!-- -->, 58,396 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1535527/0001220632-26-000006-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-e2dd0c11-5389-496e-8df8-71637205bba5"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/AMD.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">AMD</span><p class="card-meta">AMD<!-- --> <time datetime="2026-08-15">August 15</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$7,723,650.00 in total">$7.7M</span></div><svg aria-label="Score 64 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="76.40353333530376 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">64</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">PG</span><span class="card-name">Paul Darren Grasby</span><span class="card-role">EVP &amp; CSO</span></div><p class="card-summary">Paul Darren Grasby, AMD's EVP &amp; CSO, sold $7.7M of AMD stock on August 15. Four AMD insiders sold shares within a week of this trade. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Four AMD insiders sold within a week of this trade</li><li>Larger than 75% of sales in the period</li><li>Not scheduled in advance: the insider chose the timing</li></ul></section><footer class="card-foot"><p class="card-facts">15,000<!-- --> shares<!-- --> at $514.91 on average<!-- -->, 117,687 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/2488/0000002488-26-000161-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-659b9da5-317b-4ea5-906c-25e96b00f518"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/NFLX.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">Netflix</span><p class="card-meta">NFLX<!-- --> <time datetime="2026-08-06">August 6</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$2,008,606.42 in total">$2.0M</span></div><svg aria-label="Score 63 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="75.20972812693964 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">63</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">GP</span><span class="card-name">Gregory K Peters</span><span class="card-role">Co-CEO</span></div><p class="card-summary">Gregory K Peters, Netflix's Co-CEO, sold $2.0M of Netflix stock on August 6. Four Netflix insiders sold shares within a week of this trade. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Four Netflix insiders sold within a week of this trade</li><li>Made by a top executive (Co-CEO)</li><li>Not scheduled in advance: the insider chose the timing</li></ul></section><footer class="card-foot"><p class="card-facts">27,312<!-- --> shares<!-- --> at $73.54 on average<!-- -->, 120,931 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1065280/0001065280-26-000247-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-145b23be-3ce9-42c2-a8a3-0ed00013e33a"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/SNOW.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">Snowflake</span><p class="card-meta">SNOW<!-- --> <time datetime="2026-09-15">September 15</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$4,131,636.21 in total">$4.1M</span></div><svg aria-label="Score 61 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="72.8221177102114 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">61</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">JB</span><span class="card-name">Jonathan Mead Beaulier</span><span class="card-role">Chief Revenue Officer</span></div><p class="card-summary">Jonathan Mead Beaulier, Snowflake's Chief Revenue Officer, sold $4.1M of Snowflake stock on September 15. It was the first of two sales by this insider in 8 days, $4.4M in total. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Two sales by the same insider in 8 days, $4.4M in total</li><li>Not scheduled in advance: the insider chose the timing</li></ul></section><footer class="card-foot"><p class="card-facts">12,292<!-- --> shares<!-- --> at $336.12 on average<!-- -->, 213,085 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1640147/0002127025-26-000007-index.html">View SEC filing ›</a></footer></article><article class="card" id="e-1f28ae9f-9461-4d92-b2cf-5ac7fe5e0f1a"><header class="card-head"><span class="card-logo"><img alt="" class="logo" decoding="async" height="52" loading="lazy" src="logos/AVGO.png" style="color:transparent;width:52px;height:52px;border-radius:12px" width="52"/></span><div class="card-title"><span class="card-company">Broadcom</span><p class="card-meta">AVGO<!-- --> <time datetime="2026-06-16">June 16</time></p></div><div class="card-amount"><span class="card-direction">Sold</span><span class="card-value" title="$3,175,919.05 in total">$3.2M</span></div><svg aria-label="Score 60 out of 100" class="ring ring-standout" role="img" viewbox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="19"></circle><circle class="ring-value" cx="24" cy="24" r="19" stroke-dasharray="71.62831250184728 119.38052083641213" transform="rotate(-90 24 24)"></circle><text dominant-baseline="central" text-anchor="middle" x="24" y="24">60</text></svg></header><div class="card-person"><span aria-hidden="true" class="avatar avatar-initials" style="width:40px;height:40px;font-size:15.2px">MB</span><span class="card-name">Mark David Brazeal</span><span class="card-role">Chief Legal &amp; Corp Affairs Ofc</span></div><p class="card-summary">Mark David Brazeal, Broadcom's Chief Legal &amp; Corp Affairs Ofc, sold $3.2M of Broadcom stock on June 16. It was the first of four sales by this insider in 24 days, $32.4M in total. This trade was not part of a pre-scheduled plan, so its timing was the insider's own choice.</p><section aria-label="Why it stands out" class="card-why"><h4>Why it stands out</h4><ul><li>Four sales by the same insider in 24 days, $32.4M in total</li><li>Not scheduled in advance: the insider chose the timing</li></ul></section><footer class="card-foot"><p class="card-facts">8,152<!-- --> shares<!-- --> at $389.59 on average<!-- -->, 269,989 left on this holding</p><a class="card-source" href="https://www.sec.gov/Archives/edgar/data/1730168/0001730168-26-000062-index.html">View SEC filing ›</a></footer></article></div></div></section><section class="method" id="method"><div class="wrap narrow"><h2 class="band-title">How scoring works.</h2><p>Each trade gets a score from 0 to 100, computed only from its SEC filing. Purchases, larger amounts, senior roles and trades made outside a pre-set plan score higher. Sales made automatically to cover tax score zero. Trades scoring <!-- -->60<!-- --> or more are listed above.</p><p>Every summary on this page is assembled from the filings' own figures: rarity, size, timing and repeated trades. Nothing is estimated.</p></div></section></main>
+
+<section id="credits" class="band">
+  <div class="wrap">
+    <h2 class="band-title">Photo credits.</h2>
+    <p class="credits-note">Portraits come from Wikimedia Commons under free licenses. People without one are shown with
+    their initials. Company logos are trademarks of their owners, shown to identify each company.</p>
+    <div class="credits"><p class="credit"><span class="credit-name">David A Ricks</span><span>Photo by Virginia Office of the Governor, CC BY 4.0. <a href="https://commons.wikimedia.org/wiki/File:David_A._Ricks_2025.jpg">Source on Wikimedia Commons ›</a></span></p><p class="credit"><span class="credit-name">Lip Bu Tan</span><span>Photo by United States Department of Commerce, Public domain. <a href="https://commons.wikimedia.org/wiki/File:Intel_CEO_Lip-Bu_Tan_(2025)_(cropped).jpg">Source on Wikimedia Commons ›</a></span></p><p class="credit"><span class="credit-name">Mark A Stevens</span><span>Photo by Cody Pickens, CC BY-SA 4.0. <a href="https://commons.wikimedia.org/wiki/File:Mark_Stevens,_2017.jpg">Source on Wikimedia Commons ›</a></span></p><p class="credit"><span class="credit-name">Shantanu Narayen</span><span>Photo by Jolie O'Dell, CC BY 2.0. <a href="https://commons.wikimedia.org/wiki/File:Adobe_CEO_Shantanu_Narayen.jpg">Source on Wikimedia Commons ›</a></span></p></div>
+  </div>
+</section>
+<footer class="site-footer"><div class="wrap"><p>OQRO describes what company insiders did. It does not recommend buying or selling any security. Every figure comes from Form 4 filings published on SEC EDGAR.</p><p><a href="#credits">Photo credits</a></p></div></footer>
